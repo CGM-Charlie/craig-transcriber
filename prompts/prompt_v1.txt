@@ -1,0 +1,10 @@
+  Summarize the following meeting transcript by topic. For each topic discussed:
+  
+  - Give it a short descriptive title
+  - Summarize what was said, noting who contributed key points
+  - List any decisions, action items, or open questions that came out of it
+  
+  At the end, include a single "Action Items" section collecting all tasks mentioned, formatted as: [Owner] — Task.
+  
+  Omit small talk, greetings, and off-topic tangents. Preserve specific names, numbers, dates, and technical details mentioned.
+  
