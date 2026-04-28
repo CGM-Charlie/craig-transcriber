@@ -1,21 +1,12 @@
 import sys
 import os
 import glob
+import argparse
+import platform
 import numpy as np
 import soundfile as sf
-import platform
-import torch
-import whisper
 
-if platform.processor() == "arm" or platform.machine() == "arm64":
-    DEVICE = "cpu"
-    FP16 = False
-elif torch.cuda.is_available():
-    DEVICE = "cuda"
-    FP16 = True
-else:
-    DEVICE = "cpu"
-    FP16 = False
+IS_APPLE_SILICON = platform.machine() == "arm64" and platform.system() == "Darwin"
 
 def load_track(path):
     data, sr = sf.read(path, dtype="float32", always_2d=False)
@@ -29,10 +20,14 @@ def load_track(path):
 
 def speaker_from_filename(path):
     name = os.path.basename(path)
-    # "1-cgm2qp.flac" -> "cgm2qp"
     return name.split("-", 1)[1].rsplit(".", 1)[0]
 
-import argparse
+def transcribe_track_mps(audio, model_name):
+    from whisper_mps.whisper import transcribe
+    return transcribe(audio, model=model_name)
+
+def transcribe_track_default(audio, model, fp16):
+    return model.transcribe(audio, fp16=fp16)
 
 def main():
     parser = argparse.ArgumentParser(description="Transcribe Craig Discord recordings")
@@ -50,15 +45,24 @@ def main():
     if not tracks:
         sys.exit("No Craig audio tracks found in " + craig_dir)
 
-    print(f"Loading '{model_name}' model on {DEVICE}...")
-    model = whisper.load_model(model_name, device=DEVICE)
+    if IS_APPLE_SILICON:
+        print(f"Loading '{model_name}' model on Apple Silicon (MPS via whisper-mps)...")
+        transcribe_fn = lambda audio: transcribe_track_mps(audio, model_name)
+    else:
+        import torch
+        import whisper
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        fp16 = device == "cuda"
+        print(f"Loading '{model_name}' model on {device}...")
+        model = whisper.load_model(model_name, device=device)
+        transcribe_fn = lambda audio: transcribe_track_default(audio, model, fp16)
 
     all_segments = []
     for t in tracks:
         speaker = speaker_from_filename(t)
         print(f"Transcribing {speaker}...")
         audio = load_track(t)
-        result = model.transcribe(audio, fp16=FP16)
+        result = transcribe_fn(audio)
         for seg in result["segments"]:
             text = seg["text"].strip()
             if text:
