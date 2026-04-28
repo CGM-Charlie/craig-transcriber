@@ -3,7 +3,19 @@ import os
 import glob
 import numpy as np
 import soundfile as sf
+import platform
+import torch
 import whisper
+
+if platform.processor() == "arm" or platform.machine() == "arm64":
+    DEVICE = "cpu"
+    FP16 = False
+elif torch.cuda.is_available():
+    DEVICE = "cuda"
+    FP16 = True
+else:
+    DEVICE = "cpu"
+    FP16 = False
 
 def load_track(path):
     data, sr = sf.read(path, dtype="float32", always_2d=False)
@@ -35,15 +47,15 @@ def main():
     if not tracks:
         sys.exit("No Craig audio tracks found in " + craig_dir)
 
-    print(f"Loading '{model_name}' model...")
-    model = whisper.load_model(model_name)
+    print(f"Loading '{model_name}' model on {DEVICE}...")
+    model = whisper.load_model(model_name, device=DEVICE)
 
     all_segments = []
     for t in tracks:
         speaker = speaker_from_filename(t)
         print(f"Transcribing {speaker}...")
         audio = load_track(t)
-        result = model.transcribe(audio)
+        result = model.transcribe(audio, fp16=FP16)
         for seg in result["segments"]:
             text = seg["text"].strip()
             if text:
