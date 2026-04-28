@@ -32,15 +32,18 @@ def speaker_from_filename(path):
     # "1-cgm2qp.flac" -> "cgm2qp"
     return name.split("-", 1)[1].rsplit(".", 1)[0]
 
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: python3 transcript.py <craig_dir> [output_dir] [model]")
-        sys.exit(1)
+import argparse
 
-    craig_dir = os.path.abspath(sys.argv[1])
-    default_out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "transcripts")
-    output_dir = os.path.abspath(sys.argv[2]) if len(sys.argv) > 2 else default_out
-    model_name = sys.argv[3] if len(sys.argv) > 3 else "base"
+def main():
+    parser = argparse.ArgumentParser(description="Transcribe Craig Discord recordings")
+    parser.add_argument("craig_dir", help="Path to extracted Craig recording folder")
+    parser.add_argument("output_dir", nargs="?", default=None, help="Output directory (default: transcripts/)")
+    parser.add_argument("--model", "-m", default="base", help="Whisper model: tiny, base, small, medium, large (default: base)")
+    args = parser.parse_args()
+
+    craig_dir = os.path.abspath(args.craig_dir)
+    output_dir = os.path.abspath(args.output_dir) if args.output_dir else os.path.join(os.path.dirname(os.path.abspath(__file__)), "transcripts")
+    model_name = args.model
     os.makedirs(output_dir, exist_ok=True)
 
     tracks = sorted(glob.glob(os.path.join(craig_dir, "[0-9]-*.flac")))

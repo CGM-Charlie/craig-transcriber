@@ -16,15 +16,20 @@ Craig records each participant as a separate audio track. This tool transcribes 
 2. Run the script pointing to the extracted folder:
 
 ```bash
-# Default: saves to transcripts/ in this repo
+# Default: saves to transcripts/ using base model
 python3 transcript.py /path/to/craig-recording
 
-# Custom output directory
-python3 transcript.py /path/to/craig-recording /path/to/output
+# Use a more accurate model
+python3 transcript.py /path/to/craig-recording --model small
 
-# Custom output directory + Whisper model (tiny, base, small, medium, large)
-python3 transcript.py /path/to/craig-recording /path/to/output small
+# Short flag works too
+python3 transcript.py /path/to/craig-recording -m medium
+
+# Custom output directory + model
+python3 transcript.py /path/to/craig-recording /path/to/output -m large
 ```
+
+Available models (speed vs accuracy tradeoff): `tiny`, `base`, `small`, `medium`, `large`
 
 ## Output
 
